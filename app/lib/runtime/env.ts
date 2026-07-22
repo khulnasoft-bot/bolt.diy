@@ -3,7 +3,7 @@
  * Normalizes env access across Cloudflare Workers and Node.js
  */
 
-import type { AppLoadContext } from '@remix-run/cloudflare';
+import type { AppLoadContext } from '@remix-run/node';
 import { getRuntimeAdapter } from './adapter';
 
 /**

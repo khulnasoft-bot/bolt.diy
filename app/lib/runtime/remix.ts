@@ -3,7 +3,7 @@
  * Re-exports common Remix utilities to ease migration across runtimes
  *
  * Usage:
- * - Replace: import { json } from '@remix-run/cloudflare'
+ * - Replace: import { json } from '@remix-run/node'
  * - With:    import { json } from '~/lib/runtime/remix'
  *
  * At build time, this module can be aliased to @remix-run/node or @remix-run/cloudflare
@@ -14,7 +14,7 @@
  * Re-export common utilities from @remix-run/cloudflare as default
  * These are runtime-agnostic and work on both CF and Node.js
  */
-export { json, redirect, redirectDocument } from '@remix-run/cloudflare';
+export { json, redirect, redirectDocument } from '@remix-run/node';
 
 // Re-export types
 export type {
@@ -24,7 +24,7 @@ export type {
   LoaderFunctionArgs,
   MetaFunction,
   LinksFunction,
-} from '@remix-run/cloudflare';
+} from '@remix-run/node';
 
 // Re-export request/response utilities
 export { isRouteErrorResponse } from '@remix-run/react';

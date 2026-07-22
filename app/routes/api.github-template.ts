@@ -1,4 +1,4 @@
-import { json } from '@remix-run/cloudflare';
+import { json } from '@remix-run/node';
 import JSZip from 'jszip';
 
 // Function to detect if we're running in Cloudflare
@@ -6,9 +6,9 @@ function isCloudflareEnvironment(context: any): boolean {
   // Check if we're in production AND have Cloudflare Pages specific env vars
   const isProduction = process.env.NODE_ENV === 'production';
   const hasCfPagesVars = !!(
-    context?.cloudflare?.env?.CF_PAGES ||
-    context?.cloudflare?.env?.CF_PAGES_URL ||
-    context?.cloudflare?.env?.CF_PAGES_COMMIT_SHA
+    (context?.cloudflare?.env || process.env)?.CF_PAGES ||
+    (context?.cloudflare?.env || process.env)?.CF_PAGES_URL ||
+    (context?.cloudflare?.env || process.env)?.CF_PAGES_COMMIT_SHA
   );
 
   return isProduction && hasCfPagesVars;
@@ -212,7 +212,9 @@ export async function loader({ request, context }: { request: Request; context: 
   try {
     // Access environment variables from Cloudflare context or process.env
     const githubToken =
-      context?.cloudflare?.env?.GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_ACCESS_TOKEN;
+      (context?.cloudflare?.env || process.env)?.GITHUB_TOKEN ||
+      process.env.GITHUB_TOKEN ||
+      process.env.VITE_GITHUB_ACCESS_TOKEN;
 
     let fileList;
 

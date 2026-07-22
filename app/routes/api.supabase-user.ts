@@ -1,4 +1,4 @@
-import { json } from '@remix-run/cloudflare';
+import { json } from '@remix-run/node';
 import { getApiKeysFromCookie } from '~/lib/api/cookies';
 import { withSecurity } from '~/lib/security';
 
@@ -11,7 +11,7 @@ async function supabaseUserLoader({ request, context }: { request: Request; cont
     // Try to get Supabase token from various sources
     const supabaseToken =
       apiKeys.VITE_SUPABASE_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.VITE_SUPABASE_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_SUPABASE_ACCESS_TOKEN ||
       process.env.VITE_SUPABASE_ACCESS_TOKEN;
 
     if (!supabaseToken) {
@@ -93,7 +93,7 @@ async function supabaseUserAction({ request, context }: { request: Request; cont
     // Try to get Supabase token from various sources
     const supabaseToken =
       apiKeys.VITE_SUPABASE_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.VITE_SUPABASE_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_SUPABASE_ACCESS_TOKEN ||
       process.env.VITE_SUPABASE_ACCESS_TOKEN;
 
     if (!supabaseToken) {
