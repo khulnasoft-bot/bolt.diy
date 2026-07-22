@@ -13,7 +13,6 @@ import {
   type OnScrollCallback as OnEditorScroll,
 } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { IconButton } from '~/components/ui/IconButton';
-import { Slider, type SliderOptions } from '~/components/ui/Slider';
 import { workbenchStore, type WorkbenchViewType } from '~/lib/stores/workbench';
 import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
@@ -41,21 +40,6 @@ interface WorkspaceProps {
 }
 
 const viewTransition = { ease: cubicEasingFn };
-
-const sliderOptions: SliderOptions<WorkbenchViewType> = {
-  left: {
-    value: 'code',
-    text: 'Code',
-  },
-  middle: {
-    value: 'diff',
-    text: 'Diff',
-  },
-  right: {
-    value: 'preview',
-    text: 'Preview',
-  },
-};
 
 const workbenchVariants = {
   closed: {
@@ -392,10 +376,10 @@ export const Workbench = memo(
             )}
           >
             <div className="absolute inset-0 px-2 lg:px-4">
-              <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
-                <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
+              <div className="h-full flex flex-col bg-bolt-elements-bg-depth-1 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
+                <div className="flex items-center px-3 py-0 border-b border-bolt-elements-borderColor gap-0">
                   <button
-                    className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
+                    className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-2 py-2`}
                     disabled={!canHideChat || isSmallViewport}
                     onClick={() => {
                       if (canHideChat) {
@@ -403,7 +387,27 @@ export const Workbench = memo(
                       }
                     }}
                   />
-                  <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
+                  {(['code', 'diff', 'preview'] as WorkbenchViewType[]).map((view) => (
+                    <button
+                      key={view}
+                      onClick={() => setSelectedView(view)}
+                      className={classNames(
+                        'relative px-3 py-2 text-sm font-medium capitalize transition-colors',
+                        selectedView === view
+                          ? 'text-bolt-elements-textPrimary'
+                          : 'text-bolt-elements-textTertiary hover:text-bolt-elements-textSecondary',
+                      )}
+                    >
+                      {view}
+                      {selectedView === view && (
+                        <motion.span
+                          layoutId="workbench-tab"
+                          transition={{ duration: 0.2, ease: cubicEasingFn }}
+                          className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent-500"
+                        />
+                      )}
+                    </button>
+                  ))}
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
                     <div className="flex overflow-y-auto">
