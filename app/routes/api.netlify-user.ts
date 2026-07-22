@@ -1,4 +1,4 @@
-import { json } from '@remix-run/cloudflare';
+import { json } from '@remix-run/node';
 import { getApiKeysFromCookie } from '~/lib/api/cookies';
 import { withSecurity } from '~/lib/security';
 
@@ -11,7 +11,7 @@ async function netlifyUserLoader({ request, context }: { request: Request; conte
     // Try to get Netlify token from various sources
     const netlifyToken =
       apiKeys.VITE_NETLIFY_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.VITE_NETLIFY_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_NETLIFY_ACCESS_TOKEN ||
       process.env.VITE_NETLIFY_ACCESS_TOKEN;
 
     if (!netlifyToken) {
@@ -78,7 +78,7 @@ async function netlifyUserAction({ request, context }: { request: Request; conte
     // Try to get Netlify token from various sources
     const netlifyToken =
       apiKeys.VITE_NETLIFY_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.VITE_NETLIFY_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_NETLIFY_ACCESS_TOKEN ||
       process.env.VITE_NETLIFY_ACCESS_TOKEN;
 
     if (!netlifyToken) {

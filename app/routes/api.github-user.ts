@@ -1,4 +1,4 @@
-import { json } from '@remix-run/cloudflare';
+import { json } from '@remix-run/node';
 import { getApiKeysFromCookie } from '~/lib/api/cookies';
 import { withSecurity } from '~/lib/security';
 
@@ -12,8 +12,8 @@ async function githubUserLoader({ request, context }: { request: Request; contex
     const githubToken =
       apiKeys.GITHUB_API_KEY ||
       apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.GITHUB_TOKEN ||
-      context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.GITHUB_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_GITHUB_ACCESS_TOKEN ||
       process.env.GITHUB_TOKEN ||
       process.env.VITE_GITHUB_ACCESS_TOKEN;
 
@@ -102,8 +102,8 @@ async function githubUserAction({ request, context }: { request: Request; contex
     const githubToken =
       apiKeys.GITHUB_API_KEY ||
       apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
-      context?.cloudflare?.env?.GITHUB_TOKEN ||
-      context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.GITHUB_TOKEN ||
+      (context?.cloudflare?.env || process.env)?.VITE_GITHUB_ACCESS_TOKEN ||
       process.env.GITHUB_TOKEN ||
       process.env.VITE_GITHUB_ACCESS_TOKEN;
 
