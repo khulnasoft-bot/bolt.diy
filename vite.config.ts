@@ -11,6 +11,8 @@ dotenv.config({ path: '.env' });
 dotenv.config();
 
 export default defineConfig((config) => {
+  const isSsr = config.isSsrBuild === true;
+
   return {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
@@ -19,29 +21,33 @@ export default defineConfig((config) => {
       target: 'esnext',
     },
     plugins: [
-      nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream'],
-        globals: {
-          Buffer: true,
-          process: true,
-          global: true,
-        },
-        protocolImports: true,
-        exclude: ['child_process', 'fs', 'path'],
-      }),
-      {
-        name: 'buffer-polyfill',
-        transform(code, id) {
-          if (id.includes('env.mjs')) {
-            return {
-              code: `import { Buffer } from 'buffer';\n${code}`,
-              map: null,
-            };
-          }
+      ...(!isSsr
+        ? [
+            nodePolyfills({
+              include: ['buffer', 'process', 'util', 'stream'],
+              globals: {
+                Buffer: true,
+                process: true,
+                global: true,
+              },
+              protocolImports: true,
+              exclude: ['child_process', 'fs', 'path'],
+            }),
+            {
+              name: 'buffer-polyfill',
+              transform(code: string, id: string) {
+                if (id.includes('env.mjs')) {
+                  return {
+                    code: `import { Buffer } from 'buffer';\n${code}`,
+                    map: null,
+                  };
+                }
 
-          return null;
-        },
-      },
+                return null;
+              },
+            },
+          ]
+        : []),
       remixVitePlugin({
         future: {
           v3_fetcherPersist: true,

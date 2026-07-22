@@ -1,23 +1,29 @@
 import React from 'react';
 
 const EXAMPLE_PROMPTS = [
-  { text: 'Create a mobile app about octotask.dev' },
-  { text: 'Build a todo app in React using Tailwind' },
-  { text: 'Build a simple blog using Astro' },
-  { text: 'Create a cookie consent form using Material UI' },
-  { text: 'Make a space invaders game' },
-  { text: 'Make a Tic Tac Toe game in html, css and js only' },
+  {
+    icon: 'i-ph:app-window Duotone',
+    text: 'Build a real-time dashboard with charts',
+  },
+  {
+    icon: 'i-ph:shopping-cart Duotone',
+    text: 'Create an e-commerce store with Stripe',
+  },
+  {
+    icon: 'i-ph:chat-circle-dots Duotone',
+    text: 'Build a chat app with live messaging',
+  },
+  {
+    icon: 'i-ph:robot Duotone',
+    text: 'Create an AI-powered content generator',
+  },
 ];
 
 export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {
   return (
-    <div id="examples" className="relative flex flex-col gap-9 w-full max-w-3xl mx-auto flex justify-center mt-6">
-      <div
-        className="flex flex-wrap justify-center gap-2"
-        style={{
-          animation: '.25s ease-out 0s 1 _fade-and-move-in_g2ptj_1 forwards',
-        }}
-      >
+    <div id="examples" className="flex flex-col gap-6 w-full max-w-2xl mx-auto mt-8 px-4">
+      <p className="text-center text-sm text-bolt-elements-textTertiary">Describe an idea, or try one of these</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {EXAMPLE_PROMPTS.map((examplePrompt, index: number) => {
           return (
             <button
@@ -25,9 +31,18 @@ export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInp
               onClick={(event) => {
                 sendMessage?.(event, examplePrompt.text);
               }}
-              className="border border-bolt-elements-borderColor rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-950 dark:hover:bg-gray-900 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary px-3 py-1 text-xs transition-theme"
+              className="group relative flex items-start gap-3 p-4 text-left rounded-xl
+                border border-bolt-elements-borderColor
+                bg-bolt-elements-bg-depth-1
+                hover:border-accent-400 hover:shadow-md
+                transition-all duration-200"
             >
-              {examplePrompt.text}
+              <div
+                className={`shrink-0 mt-0.5 text-lg ${examplePrompt.icon} text-bolt-elements-textTertiary group-hover:text-accent-500 transition-colors`}
+              />
+              <span className="text-sm text-bolt-elements-textSecondary group-hover:text-bolt-elements-textPrimary transition-colors leading-relaxed">
+                {examplePrompt.text}
+              </span>
             </button>
           );
         })}

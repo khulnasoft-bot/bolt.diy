@@ -2,17 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@nanostores/react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { classNames } from '~/utils/classNames';
-import { TabTile } from '~/components/@settings/shared/components/TabTile';
 import { useFeatures } from '~/lib/hooks/useFeatures';
 import { useNotifications } from '~/lib/hooks/useNotifications';
 import { useConnectionStatus } from '~/lib/hooks/useConnectionStatus';
 import { tabConfigurationStore, resetTabConfiguration } from '~/lib/stores/settings';
 import { profileStore } from '~/lib/stores/profile';
 import type { TabType, Profile } from './types';
-import { TAB_LABELS, DEFAULT_TAB_CONFIG, TAB_DESCRIPTIONS } from './constants';
+import { DEFAULT_TAB_CONFIG } from './constants';
 import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
-import BackgroundRays from '~/components/ui/BackgroundRays';
 
 // Import all tab components
 import ProfileTab from '~/components/@settings/tabs/profile/ProfileTab';
@@ -35,47 +33,96 @@ interface ControlPanelProps {
   onClose: () => void;
 }
 
-// Beta status for experimental features
-const BETA_TABS = new Set<TabType>(['local-providers', 'mcp']);
+type CategoryId = 'general' | 'providers' | 'connections' | 'deploy' | 'data' | 'about';
 
-const BetaLabel = () => (
-  <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-purple-500/10 dark:bg-purple-500/20">
-    <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400">BETA</span>
-  </div>
-);
+interface Category {
+  id: CategoryId;
+  label: string;
+  icon: string;
+  tabs: { id: TabType; label: string }[];
+}
+
+const CATEGORIES: Category[] = [
+  {
+    id: 'general',
+    label: 'General',
+    icon: 'i-ph:gear-six',
+    tabs: [
+      { id: 'settings', label: 'Settings' },
+      { id: 'profile', label: 'Profile' },
+    ],
+  },
+  {
+    id: 'providers',
+    label: 'Providers',
+    icon: 'i-ph:cloud',
+    tabs: [
+      { id: 'cloud-providers', label: 'Cloud Providers' },
+      { id: 'local-providers', label: 'Local Providers' },
+      { id: 'mcp', label: 'MCP Servers' },
+    ],
+  },
+  {
+    id: 'connections',
+    label: 'Connections',
+    icon: 'i-ph:link',
+    tabs: [
+      { id: 'github', label: 'GitHub' },
+      { id: 'gitlab', label: 'GitLab' },
+      { id: 'supabase', label: 'Supabase' },
+    ],
+  },
+  {
+    id: 'deploy',
+    label: 'Deploy',
+    icon: 'i-ph:rocket-launch',
+    tabs: [
+      { id: 'vercel', label: 'Vercel' },
+      { id: 'netlify', label: 'Netlify' },
+    ],
+  },
+  {
+    id: 'data',
+    label: 'Data',
+    icon: 'i-ph:database',
+    tabs: [
+      { id: 'data', label: 'Data Management' },
+      { id: 'event-logs', label: 'Event Logs' },
+      { id: 'features', label: 'Features' },
+      { id: 'notifications', label: 'Notifications' },
+    ],
+  },
+  {
+    id: 'about',
+    label: 'About',
+    icon: 'i-ph:info',
+    tabs: [],
+  },
+];
 
 export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
-  // State
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
-  const [loadingTab, setLoadingTab] = useState<TabType | null>(null);
-  const [showTabManagement, setShowTabManagement] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
 
-  // Store values
   const tabConfiguration = useStore(tabConfigurationStore);
   const profile = useStore(profileStore) as Profile;
 
-  // Status hooks
   const { hasNewFeatures, unviewedFeatures, acknowledgeAllFeatures } = useFeatures();
   const { hasUnreadNotifications, unreadNotifications, markAllAsRead } = useNotifications();
-  const { hasConnectionIssues, currentIssue, acknowledgeIssue } = useConnectionStatus();
+  const { acknowledgeIssue } = useConnectionStatus();
 
-  // Memoize the base tab configurations to avoid recalculation
   const baseTabConfig = useMemo(() => {
     return new Map(DEFAULT_TAB_CONFIG.map((tab) => [tab.id, tab]));
   }, []);
 
-  // Add visibleTabs logic using useMemo with optimized calculations
   const visibleTabs = useMemo(() => {
     if (!tabConfiguration?.userTabs || !Array.isArray(tabConfiguration.userTabs)) {
-      console.warn('Invalid tab configuration, resetting to defaults');
       resetTabConfiguration();
-
       return [];
     }
 
     const notificationsDisabled = profile?.preferences?.notifications === false;
 
-    // Optimize user mode tab filtering
     return tabConfiguration.userTabs
       .filter((tab) => {
         if (!tab?.id) {
@@ -91,33 +138,58 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
       .sort((a, b) => a.order - b.order);
   }, [tabConfiguration, profile?.preferences?.notifications, baseTabConfig]);
 
-  // Reset to default view when modal opens/closes
+  const visibleTabIds = useMemo(() => new Set(visibleTabs.map((t) => t.id)), [visibleTabs]);
+
   useEffect(() => {
     if (!open) {
-      // Reset when closing
       setActiveTab(null);
-      setLoadingTab(null);
-      setShowTabManagement(false);
-    } else {
-      // When opening, set to null to show the main view
-      setActiveTab(null);
+      setActiveCategory(null);
     }
   }, [open]);
 
-  // Handle closing
   const handleClose = () => {
     setActiveTab(null);
-    setLoadingTab(null);
-    setShowTabManagement(false);
+    setActiveCategory(null);
     onClose();
   };
 
-  // Handlers
-  const handleBack = () => {
-    if (showTabManagement) {
-      setShowTabManagement(false);
-    } else if (activeTab) {
+  const handleCategoryClick = (categoryId: CategoryId) => {
+    if (categoryId === 'about') {
+      setActiveCategory(categoryId);
       setActiveTab(null);
+
+      return;
+    }
+
+    const category = CATEGORIES.find((c) => c.id === categoryId);
+
+    if (!category) {
+      return;
+    }
+
+    const firstVisibleTab = category.tabs.find((t) => visibleTabIds.has(t.id));
+
+    setActiveCategory(categoryId);
+    setActiveTab(firstVisibleTab?.id || null);
+  };
+
+  const handleTabClick = (tabId: TabType) => {
+    setActiveTab(tabId);
+
+    switch (tabId) {
+      case 'features':
+        acknowledgeAllFeatures();
+        break;
+      case 'notifications':
+        markAllAsRead();
+        break;
+      case 'github':
+      case 'gitlab':
+      case 'supabase':
+      case 'vercel':
+      case 'netlify':
+        acknowledgeIssue();
+        break;
     }
   };
 
@@ -151,81 +223,30 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <EventLogsTab />;
       case 'mcp':
         return <McpTab />;
-
       default:
         return null;
     }
   };
 
-  const getTabUpdateStatus = (tabId: TabType): boolean => {
+  const getTabBadge = (tabId: TabType): string | null => {
     switch (tabId) {
       case 'features':
-        return hasNewFeatures;
+        return hasNewFeatures ? `${unviewedFeatures.length}` : null;
       case 'notifications':
-        return hasUnreadNotifications;
-      case 'github':
-      case 'gitlab':
-      case 'supabase':
-      case 'vercel':
-      case 'netlify':
-        return hasConnectionIssues;
+        return hasUnreadNotifications ? `${unreadNotifications.length}` : null;
       default:
-        return false;
+        return null;
     }
   };
 
-  const getStatusMessage = (tabId: TabType): string => {
-    switch (tabId) {
-      case 'features':
-        return `${unviewedFeatures.length} new feature${unviewedFeatures.length === 1 ? '' : 's'} to explore`;
-      case 'notifications':
-        return `${unreadNotifications.length} unread notification${unreadNotifications.length === 1 ? '' : 's'}`;
-      case 'github':
-      case 'gitlab':
-      case 'supabase':
-      case 'vercel':
-      case 'netlify':
-        return currentIssue === 'disconnected'
-          ? 'Connection lost'
-          : currentIssue === 'high-latency'
-            ? 'High latency detected'
-            : 'Connection issues detected';
-      default:
-        return '';
-    }
-  };
-
-  const handleTabClick = (tabId: TabType) => {
-    setLoadingTab(tabId);
-    setActiveTab(tabId);
-    setShowTabManagement(false);
-
-    // Acknowledge notifications based on tab
-    switch (tabId) {
-      case 'features':
-        acknowledgeAllFeatures();
-        break;
-      case 'notifications':
-        markAllAsRead();
-        break;
-      case 'github':
-      case 'gitlab':
-      case 'supabase':
-      case 'vercel':
-      case 'netlify':
-        acknowledgeIssue();
-        break;
-    }
-
-    // Clear loading state after a delay
-    setTimeout(() => setLoadingTab(null), 500);
-  };
+  const currentCategory = CATEGORIES.find((c) => c.id === activeCategory);
+  const currentTab = activeTab ? getTabComponent(activeTab) : null;
 
   return (
     <RadixDialog.Root open={open}>
       <RadixDialog.Portal>
-        <div className="fixed inset-0 flex items-center justify-center z-[100] modern-scrollbar">
-          <RadixDialog.Overlay className="absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-200" />
+        <div className="fixed inset-0 flex items-center justify-center z-[100]">
+          <RadixDialog.Overlay className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
 
           <RadixDialog.Content
             aria-describedby={undefined}
@@ -235,105 +256,117 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
           >
             <div
               className={classNames(
-                'w-[1200px] h-[90vh]',
-                'bg-bolt-elements-background-depth-1',
-                'rounded-2xl shadow-2xl',
+                'w-[960px] h-[640px]',
+                'bg-bolt-elements-bg-depth-1',
+                'rounded-xl shadow-2xl',
                 'border border-bolt-elements-borderColor',
-                'flex flex-col overflow-hidden',
-                'relative',
+                'flex overflow-hidden',
                 'transform transition-all duration-200 ease-out',
                 open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4',
               )}
             >
-              <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                <BackgroundRays />
-              </div>
-              <div className="relative z-10 flex flex-col h-full">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-4">
-                    {(activeTab || showTabManagement) && (
+              {/* Sidebar */}
+              <div className="w-[200px] shrink-0 border-r border-bolt-elements-borderColor bg-bolt-elements-bg-depth-2 flex flex-col">
+                <div className="px-4 py-3 border-b border-bolt-elements-borderColor">
+                  <DialogTitle className="text-sm font-semibold text-bolt-elements-textPrimary">Settings</DialogTitle>
+                </div>
+
+                <nav className="flex-1 py-2 overflow-y-auto">
+                  {CATEGORIES.map((category) => {
+                    const hasVisibleTabs =
+                      category.id === 'about' || category.tabs.some((t) => visibleTabIds.has(t.id));
+
+                    if (!hasVisibleTabs) {
+                      return null;
+                    }
+
+                    const isActive = activeCategory === category.id;
+
+                    return (
                       <button
-                        onClick={handleBack}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-purple-500/10 dark:hover:bg-purple-500/20 group transition-colors duration-150"
+                        key={category.id}
+                        onClick={() => handleCategoryClick(category.id)}
+                        className={classNames(
+                          'w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors',
+                          isActive
+                            ? 'bg-accent-500/10 text-accent-600 dark:text-accent-400 font-medium'
+                            : 'text-bolt-elements-textSecondary hover:bg-bolt-elements-item-backgroundActive hover:text-bolt-elements-textPrimary',
+                        )}
                       >
-                        <div className="i-ph:arrow-left w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                        <div className={classNames(category.icon, 'w-4 h-4')} />
+                        {category.label}
                       </button>
-                    )}
-                    <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
-                      {showTabManagement ? 'Tab Management' : activeTab ? TAB_LABELS[activeTab] : 'Control Panel'}
-                    </DialogTitle>
-                  </div>
+                    );
+                  })}
+                </nav>
 
-                  <div className="flex items-center gap-6">
-                    {/* Avatar and Dropdown */}
-                    <div className="pl-6">
-                      <AvatarDropdown onSelectTab={handleTabClick} />
-                    </div>
-
-                    {/* Close Button */}
+                <div className="p-3 border-t border-bolt-elements-borderColor">
+                  <div className="flex items-center gap-2">
+                    <AvatarDropdown onSelectTab={handleTabClick} />
                     <button
                       onClick={handleClose}
-                      className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent hover:bg-purple-500/10 dark:hover:bg-purple-500/20 group transition-all duration-200"
+                      className="ml-auto flex items-center justify-center w-7 h-7 rounded-md text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive transition-colors"
                     >
-                      <div className="i-ph:x w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-500 transition-colors" />
+                      <div className="i-ph:x text-sm" />
                     </button>
                   </div>
                 </div>
+              </div>
 
-                {/* Content */}
-                <div
-                  className={classNames(
-                    'flex-1',
-                    'overflow-y-auto',
-                    'hover:overflow-y-auto',
-                    'scrollbar scrollbar-w-2',
-                    'scrollbar-track-transparent',
-                    'scrollbar-thumb-[#E5E5E5] hover:scrollbar-thumb-[#CCCCCC]',
-                    'dark:scrollbar-thumb-[#333333] dark:hover:scrollbar-thumb-[#444444]',
-                    'will-change-scroll',
-                    'touch-auto',
-                  )}
-                >
-                  <div
-                    className={classNames(
-                      'p-6 transition-opacity duration-150',
-                      activeTab || showTabManagement ? 'opacity-100' : 'opacity-100',
-                    )}
-                  >
-                    {activeTab ? (
-                      getTabComponent(activeTab)
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
-                        {visibleTabs.map((tab, index) => (
-                          <div
-                            key={tab.id}
-                            className={classNames(
-                              'aspect-[1.5/1] transition-transform duration-100 ease-out',
-                              'hover:scale-[1.01]',
-                            )}
-                            style={{
-                              animationDelay: `${index * 30}ms`,
-                              animation: open ? 'fadeInUp 200ms ease-out forwards' : 'none',
-                            }}
-                          >
-                            <TabTile
-                              tab={tab}
-                              onClick={() => handleTabClick(tab.id as TabType)}
-                              isActive={activeTab === tab.id}
-                              hasUpdate={getTabUpdateStatus(tab.id)}
-                              statusMessage={getStatusMessage(tab.id)}
-                              description={TAB_DESCRIPTIONS[tab.id]}
-                              isLoading={loadingTab === tab.id}
-                              className="h-full relative"
-                            >
-                              {BETA_TABS.has(tab.id) && <BetaLabel />}
-                            </TabTile>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              {/* Content */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Sub-tabs header */}
+                {currentCategory && currentCategory.tabs.length > 0 && (
+                  <div className="flex items-center gap-1 px-4 py-2 border-b border-bolt-elements-borderColor bg-bolt-elements-bg-depth-1">
+                    {currentCategory.tabs.map((tab) => {
+                      if (!visibleTabIds.has(tab.id)) {
+                        return null;
+                      }
+
+                      const isActive = activeTab === tab.id;
+                      const badge = getTabBadge(tab.id);
+
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => handleTabClick(tab.id)}
+                          className={classNames(
+                            'relative px-3 py-1.5 text-sm rounded-md transition-colors',
+                            isActive
+                              ? 'bg-accent-500/10 text-accent-600 dark:text-accent-400 font-medium'
+                              : 'text-bolt-elements-textTertiary hover:text-bolt-elements-textPrimary hover:bg-bolt-elements-item-backgroundActive',
+                          )}
+                        >
+                          {tab.label}
+                          {badge && (
+                            <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-medium rounded-full bg-accent-500 text-white">
+                              {badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
+                )}
+
+                {/* Tab content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {currentTab ||
+                    (activeCategory === 'about' ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+                        <div className="i-ph:info w-12 h-12 text-bolt-elements-textTertiary" />
+                        <div>
+                          <h3 className="text-lg font-semibold text-bolt-elements-textPrimary mb-1">OctoTask</h3>
+                          <p className="text-sm text-bolt-elements-textTertiary">AI-powered development platform</p>
+                          <p className="text-xs text-bolt-elements-textTertiary mt-2">Version 1.0.0</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+                        <div className="i-ph:sidebar-simple w-12 h-12 text-bolt-elements-textTertiary" />
+                        <p className="text-sm text-bolt-elements-textTertiary">Select a category from the sidebar</p>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
