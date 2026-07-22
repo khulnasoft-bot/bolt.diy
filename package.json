@@ -1,14 +1,14 @@
 {
-  "name": "bolt",
-  "description": "An AI Agent",
+  "name": "octotask",
+  "description": "OctoTask - A full-featured AI development platform with IDE capabilities, prompt engineering, and multi-provider deployment",
   "private": true,
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "version": "1.0.0",
   "author": {
-    "name": "bolt.diy team",
-    "email": "maintainers@bolt.diy"
+    "name": "OctoTask team",
+    "email": "maintainers@octotask.dev"
   },
   "scripts": {
     "deploy": "npm run build && wrangler pages deploy",

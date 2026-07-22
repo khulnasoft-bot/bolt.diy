@@ -48,10 +48,10 @@ export const links: LinksFunction = () => [
 ];
 
 const inlineThemeCode = stripIndents`
-  setTutorialKitTheme();
+  setOctoTaskTheme();
 
-  function setTutorialKitTheme() {
-    let theme = localStorage.getItem('bolt_theme');
+  function setOctoTaskTheme() {
+    let theme = localStorage.getItem('octotask_theme');
 
     if (!theme) {
       theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
